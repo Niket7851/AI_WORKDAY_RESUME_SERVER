@@ -1,7 +1,7 @@
 {
   "development": {
-    "username": "sa",
-    "password": "your_strong_password_here",
+    "username": "aiAdmin",
+    "password": "Admin@123",
     "database": "ai_workday_dev",
     "host": "localhost",
     "port": 1433,

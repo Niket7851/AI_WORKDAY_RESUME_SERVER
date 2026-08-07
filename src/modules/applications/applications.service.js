@@ -113,15 +113,9 @@ const createField = async (stepId, { fieldLabel, fieldType = 'text', fieldSelect
   const step = await stepsRepository.findById(stepId);
   if (!step) throw createHttpError(404, 'Step not found', 'NOT_FOUND');
 
-  if (!VALID_FIELD_TYPES.has(fieldType)) {
-    throw createHttpError(
-      422,
-      `Invalid fieldType. Allowed values: ${[...VALID_FIELD_TYPES].join(', ')}`,
-      'INVALID_FIELD_TYPE'
-    );
-  }
+  const normalizedFieldType = VALID_FIELD_TYPES.has(fieldType) ? fieldType : 'text';
 
-  return fieldsRepository.create({ stepId, fieldLabel, fieldType, fieldSelector });
+  return fieldsRepository.create({ stepId, fieldLabel, fieldType: normalizedFieldType, fieldSelector });
 };
 
 const getFields = async (stepId) => {

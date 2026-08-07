@@ -20,7 +20,7 @@ module.exports = {
       after: 'status',
     });
     await queryInterface.addColumn('Applications', 'confirmedBy', {
-      type: Sequelize.STRINhtmlG(255),
+      type: Sequelize.STRING(255),
       allowNull: true,
       defaultValue: null,
       after: 'userConfirmedAt',
