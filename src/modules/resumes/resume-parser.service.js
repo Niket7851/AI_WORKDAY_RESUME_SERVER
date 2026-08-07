@@ -1,7 +1,13 @@
 'use strict';
 
 const fs = require('fs');
-const pdfParse = require('pdf-parse');
+// pdf-parse may export either a callable function or { default: fn } depending
+// on the installed version.  Normalise to a plain callable.
+const _pdfParseImport = require('pdf-parse');
+const pdfParse =
+  typeof _pdfParseImport === 'function'
+    ? _pdfParseImport
+    : (_pdfParseImport.default ?? _pdfParseImport);
 const mammoth = require('mammoth');
 
 /**

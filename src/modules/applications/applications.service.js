@@ -5,6 +5,7 @@ const stepsRepository = require('./steps.repository');
 const fieldsRepository = require('./fields.repository');
 const { User, Resume } = require('../../database');
 const { createHttpError } = require('../../shared/utils');
+const { findOrCreateById: findOrCreateUser } = require('../users/users.repository');
 
 const VALID_APP_STATUSES = new Set(['in_progress', 'completed', 'cancelled']);
 const VALID_STEP_STATUSES = new Set(['pending', 'in_progress', 'completed', 'skipped']);
@@ -22,9 +23,8 @@ const VALID_FIELD_STATUSES = new Set(['pending', 'filled', 'skipped', 'error']);
 // ── Applications ────────────────────────────────────────────────────────────
 
 const createApplication = async ({ userId, resumeId, jobTitle, company, jobUrl }) => {
-  // FK validation with clear error messages
-  const user = await User.findByPk(userId);
-  if (!user) throw createHttpError(422, 'User not found', 'USER_NOT_FOUND');
+  // Ensure user row exists (auto-creates anonymous placeholder if needed).
+  await findOrCreateUser(userId);
 
   const resume = await Resume.findByPk(resumeId);
   if (!resume) throw createHttpError(422, 'Resume not found', 'RESUME_NOT_FOUND');

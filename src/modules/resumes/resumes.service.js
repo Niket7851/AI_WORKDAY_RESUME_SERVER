@@ -8,6 +8,7 @@ const { saveParsedResumeData } = require('./resume-parsed-data.repository');
 const { uploadDir } = require('./resume.validation');
 const { aiService } = require('../ai/ai.service');
 const { createHttpError } = require('../../shared/utils');
+const { findOrCreateById: findOrCreateUser } = require('../users/users.repository');
 
 // Simple structured logger (no external dependency)
 const logger = {
@@ -37,6 +38,11 @@ const RESUME_PARSER_VERSION = '1.0.0';
  */
 const upload = async ({ file, userId }) => {
   const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'docx';
+
+  // Ensure the User row exists before any FK-constrained inserts.
+  // The extension generates a stable UUID; if no row exists yet we create
+  // an anonymous placeholder so the FK on resumes.userId is satisfied.
+  await findOrCreateUser(userId);
 
   // Step 1: Extract text — non-fatal
   const parseResult = await resumeParserService.parseFile(file.path, file.mimetype);
