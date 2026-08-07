@@ -1,0 +1,2 @@
+# Sequelize migrations go here.
+# Run: npm run db:migrate

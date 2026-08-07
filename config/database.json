@@ -1,0 +1,39 @@
+{
+  "development": {
+    "username": "sa",
+    "password": "your_strong_password_here",
+    "database": "ai_workday_dev",
+    "host": "localhost",
+    "port": 1433,
+    "dialect": "mssql",
+    "dialectOptions": {
+      "options": {
+        "encrypt": true,
+        "trustServerCertificate": true
+      }
+    }
+  },
+  "test": {
+    "username": "sa",
+    "password": "your_strong_password_here",
+    "database": "ai_workday_test",
+    "host": "localhost",
+    "port": 1433,
+    "dialect": "mssql",
+    "dialectOptions": {
+      "options": {
+        "encrypt": true,
+        "trustServerCertificate": true
+      }
+    }
+  },
+  "production": {
+    "username": null,
+    "password": null,
+    "database": null,
+    "host": null,
+    "port": 1433,
+    "dialect": "mssql",
+    "use_env_variable": "DATABASE_URL"
+  }
+}
