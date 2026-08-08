@@ -9,6 +9,7 @@ const { createHttpError } = require('../../shared/utils');
 
 // Import resumes repository for loading structured parsed data
 const resumesRepository = require('../resumes/resumes.repository');
+const { parseById: parseResumeById } = require('../resumes/resumes.service');
 
 const logger = {
   warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), // eslint-disable-line no-console
@@ -107,15 +108,29 @@ const loadFieldContext = async (fieldId) => {
   if (!application) throw createHttpError(404, 'Application not found', 'NOT_FOUND');
 
   // findById in resumes.repository includes all sub-tables (FULL_INCLUDE)
-  const resume = await resumesRepository.findById(application.resumeId);
+  let resume = await resumesRepository.findById(application.resumeId);
   if (!resume) throw createHttpError(404, 'Resume not found', 'NOT_FOUND');
 
+  // If contactInfo is missing the resume was never AI-parsed (or parsing failed).
+  // Attempt a single inline re-parse before giving up so the user doesn't have
+  // to manually re-upload their file.
   if (!resume.contactInfo) {
-    throw createHttpError(
-      422,
-      'Resume has no parsed data. Upload and parse the resume before mapping.',
-      'RESUME_NOT_PARSED'
-    );
+    logger.warn('Resume contactInfo missing; attempting inline re-parse', { resumeId: resume.id });
+    try {
+      await parseResumeById(resume.id);
+      // Reload with freshly created sub-tables
+      resume = await resumesRepository.findById(application.resumeId);
+    } catch (parseErr) {
+      logger.warn('Inline re-parse failed', { resumeId: resume.id, code: parseErr.code });
+    }
+    // If still missing after the retry, surface a clear error.
+    if (!resume.contactInfo) {
+      throw createHttpError(
+        422,
+        'Resume AI parsing has not completed yet. Please wait a moment and try again, or remove and re-upload your resume.',
+        'RESUME_NOT_PARSED'
+      );
+    }
   }
 
   const resumeContext = buildResumeContext(resume);
