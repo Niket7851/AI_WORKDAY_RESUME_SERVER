@@ -80,7 +80,7 @@ const RESUME_PARSE_SCHEMA = {
       },
     },
   },
-  required: ['contactInfo'],
+  required: ['contactInfo', 'workExperience', 'education', 'skills', 'certifications'],
 };
 
 // ---------------------------------------------------------------------------
@@ -90,15 +90,18 @@ const buildResumeParserPrompt = (rawText) => {
   // Safety: truncate to avoid exceeding token limits (~50k chars ≈ ~12k tokens)
   const truncated = rawText.length > 50_000 ? rawText.slice(0, 50_000) : rawText;
 
-  return `You are a professional resume parser. Extract all structured data from the resume text below.
+  return `You are a professional resume parser. Extract ALL structured data from the resume text below.
 
 RULES:
 - Extract ONLY information explicitly present in the resume text. Do not invent or infer data.
-- For missing optional fields, omit the field entirely (do not use null or empty strings).
+- You MUST return ALL five top-level fields: contactInfo, workExperience, education, skills, certifications.
+- If a section has no data (e.g. no certifications found), return an empty array [] for that field — never omit it.
+- For missing optional fields within an object, omit the field (do not use null or empty strings).
 - For dates, use ISO 8601 format (YYYY-MM-DD) when possible. If only month/year available use YYYY-MM-01. If only year, use YYYY-01-01.
 - For isCurrent: set to "true" if the position is marked as current/present, "false" otherwise.
 - For skills.category: infer from context (e.g., "Programming Language", "Framework", "Tool", "Soft Skill"). Use "Other" if unclear.
 - For skills.level: use one of "Beginner", "Intermediate", "Advanced", "Expert" if inferable, otherwise omit.
+- Extract EVERY skill listed anywhere in the resume (skills section, job descriptions, etc.).
 - URLs must include the protocol (https://).
 - Return ONLY valid JSON matching the schema. No markdown fences, no extra text.
 
