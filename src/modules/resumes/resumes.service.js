@@ -104,13 +104,24 @@ const parseById = async (id) => {
     );
   }
 
-  const structuredData = await aiService.parseResume(resume.rawText);
-  // Any failure inside saveParsedResumeData rolls back the entire transaction
-  await saveParsedResumeData(resume.id, structuredData, RESUME_PARSER_VERSION);
+  let aiParsingStatus = 'success';
+  let aiParsingError;
+  try {
+    const structuredData = await aiService.parseResume(resume.rawText);
+    await saveParsedResumeData(resume.id, structuredData, RESUME_PARSER_VERSION);
+  } catch (err) {
+    aiParsingStatus = 'failed';
+    aiParsingError = err.code || err.message;
+    logger.warn('AI parsing failed in parseById', { resumeId: id, code: err.code });
+  }
 
   // Return full structured resume (without rawText)
   const full = await resumesRepository.findById(id);
-  return serializeResume(full);
+  return {
+    ...serializeResume(full),
+    aiParsingStatus,
+    ...(aiParsingError ? { aiParsingError } : {}),
+  };
 };
 
 /**

@@ -1,13 +1,9 @@
 'use strict';
 
 const fs = require('fs');
-// pdf-parse may export either a callable function or { default: fn } depending
-// on the installed version.  Normalise to a plain callable.
-const _pdfParseImport = require('pdf-parse');
-const pdfParse =
-  typeof _pdfParseImport === 'function'
-    ? _pdfParseImport
-    : (_pdfParseImport.default ?? _pdfParseImport);
+// pdf-parse v2 exports a class-based API:
+//   new PDFParse({ data: buffer }).getText() → { text }
+const { PDFParse } = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
@@ -39,7 +35,8 @@ const mammoth = require('mammoth');
 const parsePdf = async (filePath) => {
   try {
     const buffer = fs.readFileSync(filePath);
-    const result = await pdfParse(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
     const text = (result.text || '').trim();
     return { success: true, text, charCount: text.length, error: null };
   } catch (err) {

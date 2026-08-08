@@ -44,9 +44,11 @@ const validateContactInfo = (raw) => {
   if (!raw || typeof raw !== 'object') return null;
   const contact = {};
 
+  // fullName is required by schema but Gemini may return an empty string for
+  // unusual PDFs (scanned, image-based, non-Latin scripts).  Use a safe
+  // placeholder so the record is still saved and mapping can proceed.
   const fullName = sanitizeString(raw.fullName, 200);
-  if (!fullName) return null; // required
-  contact.fullName = fullName;
+  contact.fullName = fullName || 'Unknown';
 
   const optionalStrings = ['email', 'phone', 'location'];
   optionalStrings.forEach((key) => {

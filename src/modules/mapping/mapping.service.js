@@ -123,13 +123,12 @@ const loadFieldContext = async (fieldId) => {
     } catch (parseErr) {
       logger.warn('Inline re-parse failed', { resumeId: resume.id, code: parseErr.code });
     }
-    // If still missing after the retry, surface a clear error.
+    // If still missing after the retry, proceed with empty context so mapping
+    // can still attempt AI inference from field labels alone.
     if (!resume.contactInfo) {
-      throw createHttpError(
-        422,
-        'Resume AI parsing has not completed yet. Please wait a moment and try again, or remove and re-upload your resume.',
-        'RESUME_NOT_PARSED'
-      );
+      logger.warn('Proceeding with empty resume context — mapping accuracy will be reduced', {
+        resumeId: resume.id,
+      });
     }
   }
 
