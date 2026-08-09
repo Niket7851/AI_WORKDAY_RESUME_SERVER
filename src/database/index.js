@@ -4,7 +4,6 @@ const { Sequelize } = require('sequelize');
 const config = require('../config');
 const defineAssociations = require('./associations');
 
-// ── Model factory imports ──────────────────────────────────────────────────────
 const defineUser = require('./models/User');
 const defineResume = require('./models/Resume');
 const defineResumeContactInfo = require('./models/ResumeContactInfo');
@@ -18,12 +17,11 @@ const defineApplicationField = require('./models/ApplicationField');
 const defineFieldMapping = require('./models/FieldMapping');
 const defineAutomationRun = require('./models/AutomationRun');
 
-// ── Sequelize instance ────────────────────────────────────────────────────────
 const sequelize = new Sequelize(config.db.name, config.db.user, config.db.password, {
   host: config.db.host,
   port: config.db.port,
   dialect: 'mssql',
-  logging: config.env === 'development' ? console.log : false, // eslint-disable-line no-console
+  logging: config.env === 'development' ? console.log : false, 
   dialectOptions: {
     options: {
       encrypt: true,
@@ -38,7 +36,6 @@ const sequelize = new Sequelize(config.db.name, config.db.user, config.db.passwo
   },
 });
 
-// ── Initialise models ─────────────────────────────────────────────────────────
 const User = defineUser(sequelize);
 const Resume = defineResume(sequelize);
 const ResumeContactInfo = defineResumeContactInfo(sequelize);
@@ -52,7 +49,6 @@ const ApplicationField = defineApplicationField(sequelize);
 const FieldMapping = defineFieldMapping(sequelize);
 const AutomationRun = defineAutomationRun(sequelize);
 
-// ── Define associations ───────────────────────────────────────────────────────
 defineAssociations({
   User,
   Resume,
@@ -68,26 +64,19 @@ defineAssociations({
   AutomationRun,
 });
 
-/**
- * Verify database connectivity. Call on server startup.
- * @returns {Promise<void>}
- */
 async function verifyConnection() {
   await sequelize.authenticate();
 }
 
-// ── Pool error handler ────────────────────────────────────────────────────────
-// Unhandled pool-level errors (e.g. unexpected socket closures) must not crash
-// the process — log them and let the pool manager reconnect automatically.
 sequelize.connectionManager.pool?.on?.('error', (err) => {
-  // eslint-disable-next-line no-console
+
   console.error('[DB] Connection pool error (pool will reconnect):', err.message);
 });
 
 module.exports = {
   sequelize,
   verifyConnection,
-  // Models — all consumers import from here, never directly from model files
+
   User,
   Resume,
   ResumeContactInfo,

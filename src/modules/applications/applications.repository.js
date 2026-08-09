@@ -2,7 +2,6 @@
 
 const { Application, ApplicationStep, ApplicationField } = require('../../database');
 
-// Shared nested include — steps ordered by stepIndex, fields by createdAt
 const STEPS_WITH_FIELDS = {
   model: ApplicationStep,
   as: 'steps',
@@ -33,7 +32,7 @@ const create = async ({ userId, resumeId, jobTitle, company, jobUrl }) => {
 const update = async (id, data) => {
   const app = await Application.findByPk(id);
   if (!app) return null;
-  // Only update fields that were explicitly provided
+
   const allowed = ['jobTitle', 'company', 'jobUrl', 'status', 'userConfirmedAt', 'confirmedBy'];
   const patch = Object.fromEntries(
     Object.entries(data).filter(([k, v]) => allowed.includes(k) && v !== undefined)

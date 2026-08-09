@@ -20,10 +20,6 @@ const findByApplication = async (applicationId) => {
   });
 };
 
-/**
- * Check whether a step with the given index already exists for this application.
- * Pass excludeId to skip a specific step (used during PATCH to allow no-op updates).
- */
 const findByIndex = async (applicationId, stepIndex, excludeId = null) => {
   const { Op } = require('sequelize');
   const where = { applicationId, stepIndex };

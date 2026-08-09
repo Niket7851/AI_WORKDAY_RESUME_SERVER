@@ -1,37 +1,10 @@
 'use strict';
 
 const fs = require('fs');
-// pdf-parse v2 exports a class-based API:
-//   new PDFParse({ data: buffer }).getText() → { text }
+
 const { PDFParse } = require('pdf-parse');
 const mammoth = require('mammoth');
 
-/**
- * Resume Parser Service
- *
- * Provides a clean abstraction over PDF and DOCX parsing so that the
- * underlying libraries can be swapped without touching any other module.
- *
- * Security rules enforced here:
- *  - Never log extracted text (contains sensitive personal information).
- *  - Return structured result objects; let the caller decide on error handling.
- *  - Read files synchronously into a buffer before parsing to avoid keeping
- *    file handles open if the parser errors mid-stream.
- */
-
-/**
- * @typedef {Object} ParseResult
- * @property {boolean} success      - Whether text extraction succeeded.
- * @property {string|null} text     - Extracted plain text (null on failure).
- * @property {number} charCount     - Character count of the extracted text.
- * @property {string|null} error    - Error message if parsing failed (never the raw text).
- */
-
-/**
- * Extracts plain text from a PDF file.
- * @param {string} filePath
- * @returns {Promise<ParseResult>}
- */
 const parsePdf = async (filePath) => {
   try {
     const buffer = fs.readFileSync(filePath);
@@ -40,8 +13,8 @@ const parsePdf = async (filePath) => {
     const text = (result.text || '').trim();
     return { success: true, text, charCount: text.length, error: null };
   } catch (err) {
-    // Log only that parsing failed — never log the file content
-    console.warn('[ResumeParser] PDF parsing failed:', err.message); // eslint-disable-line no-console
+
+    console.warn('[ResumeParser] PDF parsing failed:', err.message); 
     return {
       success: false,
       text: null,
@@ -51,22 +24,17 @@ const parsePdf = async (filePath) => {
   }
 };
 
-/**
- * Extracts plain text from a DOCX file.
- * @param {string} filePath
- * @returns {Promise<ParseResult>}
- */
 const parseDocx = async (filePath) => {
   try {
     const result = await mammoth.extractRawText({ path: filePath });
     const text = (result.value || '').trim();
     if (result.messages && result.messages.length > 0) {
-      // Log warning count only — not message content which may include filenames
-      console.warn(`[ResumeParser] DOCX parsed with ${result.messages.length} warning(s).`); // eslint-disable-line no-console
+
+      console.warn(`[ResumeParser] DOCX parsed with ${result.messages.length} warning(s).`); 
     }
     return { success: true, text, charCount: text.length, error: null };
   } catch (err) {
-    console.warn('[ResumeParser] DOCX parsing failed:', err.message); // eslint-disable-line no-console
+    console.warn('[ResumeParser] DOCX parsing failed:', err.message); 
     return {
       success: false,
       text: null,
@@ -76,13 +44,6 @@ const parseDocx = async (filePath) => {
   }
 };
 
-/**
- * Parses a resume file based on its MIME type.
- *
- * @param {string} filePath  - Absolute path to the uploaded file on disk.
- * @param {string} mimeType  - MIME type reported at upload time.
- * @returns {Promise<ParseResult>}
- */
 const parseFile = async (filePath, mimeType) => {
   if (mimeType === 'application/pdf') {
     return parsePdf(filePath);

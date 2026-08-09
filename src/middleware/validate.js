@@ -2,29 +2,6 @@
 
 const { createHttpError } = require('../shared/utils');
 
-/**
- * Request validation middleware factory.
- *
- * Usage in a route file:
- *   const { validate } = require('../../middleware/validate');
- *   router.post('/', validate({ body: { email: 'required|string', name: 'required|string' } }), controller.create);
- *
- * Supported field rules (pipe-separated):
- *   required   — field must be present and non-empty
- *   string     — must be a string
- *   number     — must be a number
- *   boolean    — must be a boolean
- *   uuid       — must match UUID v4 format
- *   email      — must be a valid email
- *   max:N      — string length or number value must be <= N
- *   min:N      — string length or number value must be >= N
- *
- * Returns HTTP 422 with { success: false, error: { message, code, details } }
- * when validation fails.
- *
- * @param {{ body?: object, params?: object, query?: object }} spec
- * @returns {import('express').RequestHandler}
- */
 const validate = (spec) => (req, _res, next) => {
   const errors = [];
 
@@ -40,11 +17,11 @@ const validate = (spec) => (req, _res, next) => {
             field: `${sourceLabel}.${fieldName}`,
             message: `${fieldName} is required`,
           });
-          return; // no further checks if missing
+          return; 
         }
       }
 
-      if (!isPresent) continue; // optional field not provided — skip format checks
+      if (!isPresent) continue; 
 
       if (rule === 'string' && typeof value !== 'string') {
         errors.push({
@@ -130,7 +107,6 @@ const validate = (spec) => (req, _res, next) => {
   next();
 };
 
-// Convenience: validate that a route param is a UUID
 const validateUuidParam = (paramName = 'id') =>
   validate({ params: { [paramName]: 'required|uuid' } });
 

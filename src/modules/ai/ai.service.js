@@ -4,15 +4,10 @@ const createGeminiProvider = require('./providers/gemini.provider');
 const { buildResumeParserPrompt, RESUME_PARSE_SCHEMA } = require('./prompts/resume-parser.prompt');
 const { buildFieldMapperPrompt, FIELD_MAPPER_SCHEMA } = require('./prompts/field-mapper.prompt');
 
-// Simple structured logger (no external dependency)
 const logger = {
-  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), // eslint-disable-line no-console
-  error: (msg, meta = {}) => console.error(JSON.stringify({ level: 'error', msg, ...meta })), // eslint-disable-line no-console
+  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), 
+  error: (msg, meta = {}) => console.error(JSON.stringify({ level: 'error', msg, ...meta })), 
 };
-
-// ---------------------------------------------------------------------------
-// Validation helpers
-// ---------------------------------------------------------------------------
 
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
@@ -31,22 +26,15 @@ const sanitizeUrl = (v) => {
 const sanitizeDate = (v) => {
   if (!isNonEmptyString(v)) return null;
   const trimmed = v.trim();
-  // Accept YYYY, YYYY-MM, YYYY-MM-DD
+
   if (!/^\d{4}(-\d{2}(-\d{2})?)?$/.test(trimmed)) return null;
   return trimmed;
 };
-
-// ---------------------------------------------------------------------------
-// Output validation & normalisation
-// ---------------------------------------------------------------------------
 
 const validateContactInfo = (raw) => {
   if (!raw || typeof raw !== 'object') return null;
   const contact = {};
 
-  // fullName is required by schema but Gemini may return an empty string for
-  // unusual PDFs (scanned, image-based, non-Latin scripts).  Use a safe
-  // placeholder so the record is still saved and mapping can proceed.
   const fullName = sanitizeString(raw.fullName, 200);
   contact.fullName = fullName || 'Unknown';
 
@@ -177,19 +165,10 @@ const validateAndNormalizeAiOutput = (raw) => {
   };
 };
 
-// ---------------------------------------------------------------------------
-// AIService factory
-// ---------------------------------------------------------------------------
-
 const createAiService = (provider = null) => {
-  // Allow injection for testing; default to Gemini
+
   const resolvedProvider = provider || createGeminiProvider();
 
-  /**
-   * Parse a resume's raw text into structured data.
-   * @param {string} rawText - Extracted plain text from the resume file
-   * @returns {Promise<{contactInfo, workExperience, education, skills, certifications}>}
-   */
   const parseResume = async (rawText) => {
     if (!isNonEmptyString(rawText)) {
       throw new Error('rawText must be a non-empty string');
@@ -204,7 +183,7 @@ const createAiService = (provider = null) => {
         responseSchema: RESUME_PARSE_SCHEMA,
       });
     } catch (err) {
-      // Provider errors already have code/statusCode set — re-throw as-is
+
       logger.error('AI provider error during resume parsing', { code: err.code });
       throw err;
     }
@@ -231,15 +210,6 @@ const createAiService = (provider = null) => {
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // mapField — semantically map one form field to structured resume data
-  // ---------------------------------------------------------------------------
-
-  /**
-   * @param {{ label: string, type: string, selector?: string }} fieldMeta
-   * @param {object} resumeContext — structured resume data (contact, workExperience, ...)
-   * @returns {Promise<{resume_path, mapped_value, mapping_method, confidence, reason, status}>}
-   */
   const mapField = async (fieldMeta, resumeContext) => {
     if (!fieldMeta || !fieldMeta.label) {
       throw new Error('fieldMeta.label is required');
@@ -278,10 +248,6 @@ const createAiService = (provider = null) => {
   return { parseResume, mapField };
 };
 
-// ---------------------------------------------------------------------------
-// Field mapping output validation
-// ---------------------------------------------------------------------------
-
 const VALID_MAPPING_STATUSES = new Set(['mapped', 'uncertain', 'unmapped']);
 
 const validateFieldMappingOutput = (raw) => {
@@ -292,20 +258,16 @@ const validateFieldMappingOutput = (raw) => {
     throw err;
   }
 
-  // Normalise confidence — clamp to [0, 1]
   let confidence = Number(raw.confidence);
   if (!Number.isFinite(confidence)) confidence = 0;
   confidence = Math.min(1, Math.max(0, confidence));
 
-  // Normalise status
   let status = typeof raw.status === 'string' ? raw.status.toLowerCase().trim() : 'unmapped';
   if (!VALID_MAPPING_STATUSES.has(status)) status = 'unmapped';
 
-  // Enforce consistency: low confidence must not be 'mapped'
   if (confidence < 0.5 && status === 'mapped') status = 'uncertain';
   if (confidence === 0) status = 'unmapped';
 
-  // Sanitize strings
   const resume_path =
     typeof raw.resume_path === 'string' && raw.resume_path.trim()
       ? raw.resume_path.trim().slice(0, 255)
@@ -316,7 +278,6 @@ const validateFieldMappingOutput = (raw) => {
       ? raw.mapped_value.trim().slice(0, 5000)
       : null;
 
-  // If unmapped, clear any value the AI might have accidentally returned
   const finalMappedValue = status === 'unmapped' ? null : mapped_value;
   const finalResumePath = status === 'unmapped' ? null : resume_path;
 
@@ -335,8 +296,6 @@ const validateFieldMappingOutput = (raw) => {
   };
 };
 
-// Lazy singleton — provider is created on first use so the app starts
-// even when GEMINI_API_KEY is not set (calls will fail at runtime instead).
 let _instance = null;
 
 const aiService = {

@@ -1,29 +1,5 @@
 'use strict';
 
-/**
- * Defines all Sequelize model associations in one place.
- * Called once during application startup after all models are initialised.
- *
- * Relationship summary:
- *   User          has many  Resume
- *   User          has many  Application
- *   Resume        belongs to User
- *   Resume        has one   ResumeContactInfo
- *   Resume        has many  ResumeExperience
- *   Resume        has many  ResumeEducation
- *   Resume        has many  ResumeSkill
- *   Resume        has many  ResumeCertification
- *   Resume        has many  Application
- *   Application   belongs to User
- *   Application   belongs to Resume
- *   Application   has many  ApplicationStep
- *   Application   has many  AutomationRun
- *   ApplicationStep  belongs to Application
- *   ApplicationStep  has many ApplicationField
- *   ApplicationField belongs to ApplicationStep
- *   FieldMapping  — standalone lookup table (no FK associations)
- *   AutomationRun belongs to Application
- */
 function defineAssociations(models) {
   const {
     User,
@@ -39,11 +15,9 @@ function defineAssociations(models) {
     AutomationRun,
   } = models;
 
-  // ── User ↔ Resume ──────────────────────────────────────────────────────────
   User.hasMany(Resume, { foreignKey: 'userId', as: 'resumes', onDelete: 'CASCADE' });
   Resume.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-  // ── Resume → resume detail tables ─────────────────────────────────────────
   Resume.hasOne(ResumeContactInfo, {
     foreignKey: 'resumeId',
     as: 'contactInfo',
@@ -79,15 +53,12 @@ function defineAssociations(models) {
   });
   ResumeCertification.belongsTo(Resume, { foreignKey: 'resumeId', as: 'resume' });
 
-  // ── User ↔ Application ────────────────────────────────────────────────────
   User.hasMany(Application, { foreignKey: 'userId', as: 'applications', onDelete: 'CASCADE' });
   Application.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-  // ── Resume ↔ Application ──────────────────────────────────────────────────
   Resume.hasMany(Application, { foreignKey: 'resumeId', as: 'applications' });
   Application.belongsTo(Resume, { foreignKey: 'resumeId', as: 'resume' });
 
-  // ── Application → ApplicationStep → ApplicationField ──────────────────────
   Application.hasMany(ApplicationStep, {
     foreignKey: 'applicationId',
     as: 'steps',
@@ -102,7 +73,6 @@ function defineAssociations(models) {
   });
   ApplicationField.belongsTo(ApplicationStep, { foreignKey: 'stepId', as: 'step' });
 
-  // ── Application → AutomationRun ───────────────────────────────────────────
   Application.hasMany(AutomationRun, {
     foreignKey: 'applicationId',
     as: 'automationRuns',

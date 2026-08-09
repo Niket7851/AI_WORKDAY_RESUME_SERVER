@@ -1,21 +1,18 @@
 const { GoogleGenAI, ApiError } = require('@google/genai');
 const config = require('../../../config');
 
-// Simple structured logger (no external dependency)
 const logger = {
-  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), // eslint-disable-line no-console
-  error: (msg, meta = {}) => console.error(JSON.stringify({ level: 'error', msg, ...meta })), // eslint-disable-line no-console
+  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), 
+  error: (msg, meta = {}) => console.error(JSON.stringify({ level: 'error', msg, ...meta })), 
 };
 
 const AI_TIMEOUT_MS = 30_000;
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
-/** Maximum number of automatic retries for transient server-side failures. */
 const MAX_RETRIES = 2;
-/** Base back-off delay in ms (doubles each retry, capped at 8 s). */
+
 const RETRY_BASE_MS = 1_000;
 
-/** Error codes that are safe to retry (transient, not client faults). */
 const RETRYABLE_STATUSES = new Set([429, 503, 500]);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,9 +24,6 @@ const createGeminiProvider = () => {
 
   const ai = new GoogleGenAI({ apiKey: config.ai.geminiApiKey });
 
-  /**
-   * Wraps generateContent with a hard timeout.
-   */
   const withTimeout = (promise, ms) => {
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
@@ -38,13 +32,6 @@ const createGeminiProvider = () => {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
   };
 
-  /**
-   * @param {string} prompt
-   * @param {object} [options]
-   * @param {string} [options.responseMimeType]
-   * @param {object} [options.responseSchema]
-   * @returns {Promise<string>}
-   */
   const generateContent = async (prompt, options = {}) => {
     const requestConfig = {};
     if (options.responseMimeType) {
@@ -57,7 +44,7 @@ const createGeminiProvider = () => {
     let lastError;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      // Exponential back-off before each retry (not before the first attempt).
+
       if (attempt > 0) {
         const backoffMs = Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), 8_000);
         logger.warn('Retrying Gemini request', { attempt, backoffMs });
@@ -78,7 +65,7 @@ const createGeminiProvider = () => {
         lastError = err;
 
         if (err instanceof ApiError) {
-          // Rate-limit: back off but retry (API may clear within seconds)
+
           if (err.status === 429) {
             logger.warn('Gemini rate limit reached', { status: err.status, attempt });
             if (attempt < MAX_RETRIES) continue;
@@ -87,7 +74,7 @@ const createGeminiProvider = () => {
             rateError.statusCode = 429;
             throw rateError;
           }
-          // Service unavailable or internal error — retryable
+
           if (RETRYABLE_STATUSES.has(err.status) && attempt < MAX_RETRIES) {
             logger.warn('Gemini transient error, will retry', { status: err.status, attempt });
             continue;
@@ -106,7 +93,6 @@ const createGeminiProvider = () => {
           throw apiErr;
         }
 
-        // Timeout — retryable
         if (err.message && err.message.includes('timed out')) {
           logger.warn('Gemini request timed out', { attempt });
           if (attempt < MAX_RETRIES) continue;
@@ -116,12 +102,10 @@ const createGeminiProvider = () => {
           throw timeoutErr;
         }
 
-        // Unknown / network error — not safe to retry
         throw err;
       }
     }
 
-    // Should not reach here, but guard against it
     throw lastError ?? new Error('AI request failed after retries');
   };
 

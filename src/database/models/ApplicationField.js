@@ -32,28 +32,28 @@ const defineApplicationField = (sequelize) => {
         defaultValue: 'text',
         validate: { isIn: [FIELD_TYPES] },
       },
-      // CSS selector or XPath for the DOM element
+
       fieldSelector: {
         type: DataTypes.STRING(1000),
         allowNull: true,
       },
-      // Value detected already in the field (must not be overwritten if valid)
+
       detectedValue: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      // Value the AI filled or proposed
+
       filledValue: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      // 0.0 – 1.0
+
       confidence: {
         type: DataTypes.FLOAT,
         allowNull: true,
         validate: { min: 0, max: 1 },
       },
-      // Fields below confidence threshold or unmapped → user must review
+
       requiresReview: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -65,13 +65,13 @@ const defineApplicationField = (sequelize) => {
         defaultValue: 'pending',
         validate: { isIn: [FIELD_STATUSES] },
       },
-      // How many times automation attempted to fill this field
+
       retryCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
       },
-      // Last error message from a failed fill attempt
+
       errorMessage: {
         type: DataTypes.TEXT,
         allowNull: true,

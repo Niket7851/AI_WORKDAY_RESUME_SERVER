@@ -1,10 +1,5 @@
 'use strict';
 
-/**
- * Sequelize CLI database configuration.
- * Reads all credentials from environment variables — never hard-code secrets.
- * This file is used by sequelize-cli (migrations, seeders) and referenced in .sequelizerc.
- */
 require('dotenv').config();
 
 const shared = {
@@ -31,7 +26,7 @@ module.exports = {
     database: process.env.DB_NAME || 'ai_workday_dev',
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 1433,
-    logging: console.log, // eslint-disable-line no-console
+    logging: console.log, 
   },
   test: {
     ...shared,

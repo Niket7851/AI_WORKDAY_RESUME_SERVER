@@ -16,7 +16,6 @@ const aiRoutes = require('../modules/ai/ai.routes');
 
 const router = Router();
 
-// ── Health check — GET /api/v1/health ────────────────────────────────────────
 router.get('/health', async (_req, res) => {
   let dbStatus = 'disconnected';
 
@@ -24,7 +23,7 @@ router.get('/health', async (_req, res) => {
     await verifyConnection();
     dbStatus = 'connected';
   } catch {
-    // DB is unreachable — still respond with degraded status, not a 500
+
   }
 
   const isHealthy = dbStatus === 'connected';
@@ -41,7 +40,6 @@ router.get('/health', async (_req, res) => {
   );
 });
 
-// ── Module routes ─────────────────────────────────────────────────────────────
 router.use('/users', usersRoutes);
 router.use('/resumes', resumesRoutes);
 router.use('/applications', applicationsRoutes);
@@ -51,7 +49,6 @@ router.use('/mapping', mappingRoutes);
 router.use('/automation', automationRoutes);
 router.use('/ai', aiRoutes);
 
-// ── Catch-all for unknown /api/v1/* routes ────────────────────────────────────
 router.use((_req, res) => {
   sendError(res, 'Not found', 404, 'NOT_FOUND');
 });

@@ -6,17 +6,6 @@ const { aiService } = require('./ai.service');
 
 const router = Router();
 
-/**
- * POST /api/v1/ai/parse-resume-text
- *
- * Test endpoint: accepts raw resume text and returns the structured AI output.
- * Useful for verifying the Gemini integration without uploading a file.
- *
- * Body: { text: string }
- *
- * NOTE: This endpoint is intended for development/testing only.
- * In production, resume parsing is triggered automatically on upload.
- */
 router.post(
   '/parse-resume-text',
   asyncHandler(async (req, res) => {

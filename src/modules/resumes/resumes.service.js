@@ -10,44 +10,19 @@ const { aiService } = require('../ai/ai.service');
 const { createHttpError } = require('../../shared/utils');
 const { findOrCreateById: findOrCreateUser } = require('../users/users.repository');
 
-// Simple structured logger (no external dependency)
 const logger = {
-  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), // eslint-disable-line no-console
+  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), 
 };
 
-/**
- * Increment this when the Gemini prompt or response schema changes so stored
- * records can be identified as needing a re-parse.
- */
 const RESUME_PARSER_VERSION = '1.0.0';
 
-/**
- * Resumes service — all business logic for the resumes module.
- * Does not touch Sequelize directly (goes through repositories).
- */
-
-/**
- * Process an uploaded resume file:
- *  1. Parse text from PDF/DOCX.
- *  2. Persist a Resume record.
- *  3. Call Gemini to extract structured data.
- *  4. Persist structured data + stamp parserVersion in one transaction.
- *  5. Return the full structured resume (no raw text).
- *
- * @param {{ file: Express.Multer.File, userId: string }} params
- */
 const upload = async ({ file, userId }) => {
   const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'docx';
 
-  // Ensure the User row exists before any FK-constrained inserts.
-  // The extension generates a stable UUID; if no row exists yet we create
-  // an anonymous placeholder so the FK on resumes.userId is satisfied.
   await findOrCreateUser(userId);
 
-  // Step 1: Extract text — non-fatal
   const parseResult = await resumeParserService.parseFile(file.path, file.mimetype);
 
-  // Step 2: Persist Resume record (rawText preserved, never returned to client)
   const resume = await resumesRepository.create({
     userId,
     originalFileName: file.originalname,
@@ -57,7 +32,6 @@ const upload = async ({ file, userId }) => {
     parsedAt: null,
   });
 
-  // Step 3 & 4: AI parsing — non-fatal; record is kept even if AI fails
   let aiParsingStatus = 'skipped';
   let aiParsingError;
 
@@ -73,7 +47,6 @@ const upload = async ({ file, userId }) => {
     }
   }
 
-  // Step 5: Reload with all sub-tables included
   const full = await resumesRepository.findById(resume.id);
 
   return {
@@ -86,12 +59,6 @@ const upload = async ({ file, userId }) => {
   };
 };
 
-/**
- * Trigger AI parsing for an already-stored resume.
- * Replaces any previously parsed data in one transaction.
- *
- * @param {string} id  Resume UUID
- */
 const parseById = async (id) => {
   const resume = await resumesRepository.findByIdWithText(id);
   if (!resume) throw createHttpError(404, 'Resume not found', 'NOT_FOUND');
@@ -115,7 +82,6 @@ const parseById = async (id) => {
     logger.warn('AI parsing failed in parseById', { resumeId: id, code: err.code });
   }
 
-  // Return full structured resume (without rawText)
   const full = await resumesRepository.findById(id);
   return {
     ...serializeResume(full),
@@ -124,9 +90,6 @@ const parseById = async (id) => {
   };
 };
 
-/**
- * @param {{ userId?: string }} filters
- */
 const getAll = async (filters = {}) => {
   const resumes = await resumesRepository.findAll(filters);
   return resumes.map(serializeResume);
@@ -138,10 +101,6 @@ const getById = async (id) => {
   return serializeResume(resume);
 };
 
-/**
- * Deletes a resume record AND the stored file from disk.
- * @param {string} id
- */
 const remove = async (id) => {
   const resume = await resumesRepository.remove(id);
   if (!resume) throw createHttpError(404, 'Resume not found', 'NOT_FOUND');
@@ -154,14 +113,10 @@ const remove = async (id) => {
   return resume;
 };
 
-// ---------------------------------------------------------------------------
-// Serializer — converts Sequelize instance to a plain response object
-// ---------------------------------------------------------------------------
-
 const serializeResume = (r) => {
   const plain = r.toJSON ? r.toJSON() : r;
-  // rawText is always excluded from responses — it's for internal use only
-  const { rawText: _rawText, ...safe } = plain; // eslint-disable-line no-unused-vars
+
+  const { rawText: _rawText, ...safe } = plain; 
   return safe;
 };
 

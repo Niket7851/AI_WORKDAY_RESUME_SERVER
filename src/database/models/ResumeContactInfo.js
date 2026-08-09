@@ -15,7 +15,7 @@ const defineResumeContactInfo = (sequelize) => {
       resumeId: {
         type: DataTypes.UUID,
         allowNull: false,
-        unique: true, // one contact block per resume
+        unique: true, 
         references: { model: 'Resumes', key: 'id' },
         onDelete: 'CASCADE',
       },

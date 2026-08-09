@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('AutomationRuns', {
@@ -21,7 +20,7 @@ module.exports = {
       completedAt: { type: Sequelize.DATE, allowNull: true },
       status: { type: Sequelize.STRING(20), allowNull: false, defaultValue: 'running' },
       errorMessage: { type: Sequelize.TEXT, allowNull: true },
-      // Non-sensitive metadata stored as JSON text
+
       metadata: { type: Sequelize.TEXT, allowNull: true },
       createdAt: { type: Sequelize.DATE, allowNull: false },
       updatedAt: { type: Sequelize.DATE, allowNull: false },

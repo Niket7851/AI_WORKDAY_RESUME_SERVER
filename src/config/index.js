@@ -1,10 +1,5 @@
 'use strict';
 
-/**
- * Application configuration loaded from environment variables.
- * All modules should import config from here — never read process.env directly.
- */
-
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3001,

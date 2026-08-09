@@ -1,8 +1,5 @@
 const { Type } = require('@google/genai');
 
-// ---------------------------------------------------------------------------
-// JSON response schema for field mapping
-// ---------------------------------------------------------------------------
 const FIELD_MAPPER_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -35,16 +32,6 @@ const FIELD_MAPPER_SCHEMA = {
   required: ['mapping_method', 'confidence', 'reason', 'status'],
 };
 
-// ---------------------------------------------------------------------------
-// Prompt builder
-// ---------------------------------------------------------------------------
-
-/**
- * Build the field-mapper prompt.
- *
- * @param {{ label: string, type: string, selector?: string }} fieldMeta
- * @param {object} resumeContext  — structured resume data (contact, workExperience, etc.)
- */
 const buildFieldMapperPrompt = (fieldMeta, resumeContext) => {
   const resumeJson = JSON.stringify(resumeContext, null, 2);
 

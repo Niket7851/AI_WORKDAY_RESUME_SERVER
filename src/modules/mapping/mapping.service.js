@@ -7,23 +7,14 @@ const applicationsRepository = require('../applications/applications.repository'
 const { aiService } = require('../ai/ai.service');
 const { createHttpError } = require('../../shared/utils');
 
-// Import resumes repository for loading structured parsed data
 const resumesRepository = require('../resumes/resumes.repository');
 const { parseById: parseResumeById } = require('../resumes/resumes.service');
 
 const logger = {
-  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), // eslint-disable-line no-console
+  warn: (msg, meta = {}) => console.warn(JSON.stringify({ level: 'warn', msg, ...meta })), 
 };
 
-// ---------------------------------------------------------------------------
-// Confidence thresholds
-// ---------------------------------------------------------------------------
-const REVIEW_THRESHOLD = 0.7; // below this → requiresReview = true on the field
-
-// ---------------------------------------------------------------------------
-// Resume context builder
-// Transforms Sequelize model instances into a clean JSON object for the AI.
-// ---------------------------------------------------------------------------
+const REVIEW_THRESHOLD = 0.7; 
 
 const omitNulls = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null));
 
@@ -86,17 +77,6 @@ const buildResumeContext = (resume) => {
   return ctx;
 };
 
-// ---------------------------------------------------------------------------
-// Core mapping logic (shared by map and remap)
-// ---------------------------------------------------------------------------
-
-/**
- * Load all context needed to map a field:
- * ApplicationField → ApplicationStep → Application → Resume (with parsed data)
- *
- * @param {string} fieldId
- * @returns {{ field, resume, resumeContext }}
- */
 const loadFieldContext = async (fieldId) => {
   const field = await fieldsRepository.findById(fieldId);
   if (!field) throw createHttpError(404, 'Field not found', 'NOT_FOUND');
@@ -107,24 +87,19 @@ const loadFieldContext = async (fieldId) => {
   const application = await applicationsRepository.findById(step.applicationId);
   if (!application) throw createHttpError(404, 'Application not found', 'NOT_FOUND');
 
-  // findById in resumes.repository includes all sub-tables (FULL_INCLUDE)
   let resume = await resumesRepository.findById(application.resumeId);
   if (!resume) throw createHttpError(404, 'Resume not found', 'NOT_FOUND');
 
-  // If contactInfo is missing the resume was never AI-parsed (or parsing failed).
-  // Attempt a single inline re-parse before giving up so the user doesn't have
-  // to manually re-upload their file.
   if (!resume.contactInfo) {
     logger.warn('Resume contactInfo missing; attempting inline re-parse', { resumeId: resume.id });
     try {
       await parseResumeById(resume.id);
-      // Reload with freshly created sub-tables
+
       resume = await resumesRepository.findById(application.resumeId);
     } catch (parseErr) {
       logger.warn('Inline re-parse failed', { resumeId: resume.id, code: parseErr.code });
     }
-    // If still missing after the retry, proceed with empty context so mapping
-    // can still attempt AI inference from field labels alone.
+
     if (!resume.contactInfo) {
       logger.warn('Proceeding with empty resume context — mapping accuracy will be reduced', {
         resumeId: resume.id,
@@ -136,13 +111,9 @@ const loadFieldContext = async (fieldId) => {
   return { field, resume, resumeContext };
 };
 
-/**
- * Run AI mapping and persist results.  Force = true skips the "already mapped" guard.
- */
 const runMapping = async (fieldId, force) => {
   const { field, resumeContext } = await loadFieldContext(fieldId);
 
-  // Guard: prevent accidental double-mapping (remap passes force = true)
   if (!force) {
     const existing = await mappingRepository.findByFieldId(fieldId);
     if (existing) {
@@ -154,7 +125,6 @@ const runMapping = async (fieldId, force) => {
     }
   }
 
-  // Call AI
   const fieldMeta = {
     label: field.fieldLabel,
     type: field.fieldType,
@@ -165,15 +135,13 @@ const runMapping = async (fieldId, force) => {
   try {
     aiResult = await aiService.mapField(fieldMeta, resumeContext);
   } catch (err) {
-    // AI errors are propagated to the caller (controller → global error handler)
+
     logger.warn('AI field mapping failed', { fieldId, code: err.code });
     throw err;
   }
 
-  // Derive requiresReview for the ApplicationField
   const requiresReview = aiResult.confidence < REVIEW_THRESHOLD || aiResult.status !== 'mapped';
 
-  // Persist mapping record (upsert handles both map and remap)
   const { mapping, created } = await mappingRepository.upsertByFieldId(fieldId, {
     fieldLabel: field.fieldLabel,
     fieldType: field.fieldType,
@@ -185,7 +153,6 @@ const runMapping = async (fieldId, force) => {
     mappingStatus: aiResult.status,
   });
 
-  // Update ApplicationField with the proposed value
   await fieldsRepository.update(fieldId, {
     filledValue: aiResult.mapped_value || null,
     confidence: aiResult.confidence,
@@ -196,29 +163,10 @@ const runMapping = async (fieldId, force) => {
   return { mapping: mapping.toJSON ? mapping.toJSON() : mapping, created };
 };
 
-// ---------------------------------------------------------------------------
-// Public service methods
-// ---------------------------------------------------------------------------
-
-/**
- * Map a field for the first time.
- * 409 if a mapping already exists — use remapField instead.
- */
 const mapField = (fieldId) => runMapping(fieldId, false);
 
-/**
- * Re-run AI mapping for a field, replacing any previous mapping.
- * Clears override values so the AI result is authoritative again.
- */
 const remapField = (fieldId) => runMapping(fieldId, true);
 
-/**
- * Apply a manual user override to an existing mapping.
- * Keeps the original AI mapping columns intact; sets overrideValue + overriddenBy.
- *
- * @param {string} fieldId
- * @param {{ overrideValue: string, userId: string }} params
- */
 const overrideMapping = async (fieldId, { overrideValue, userId }) => {
   if (typeof overrideValue !== 'string' || overrideValue.trim().length === 0) {
     throw createHttpError(422, 'overrideValue must be a non-empty string', 'VALIDATION_ERROR');
@@ -241,7 +189,6 @@ const overrideMapping = async (fieldId, { overrideValue, userId }) => {
     isVerified: true,
   });
 
-  // Also update the ApplicationField's filled value to the override
   await fieldsRepository.update(fieldId, {
     filledValue: overrideValue.trim(),
     requiresReview: false,

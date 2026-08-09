@@ -11,7 +11,7 @@ async function getById(id) {
 }
 
 async function create(data) {
-  // Validation will be added in a later phase
+
   return usersRepository.create(data);
 }
 

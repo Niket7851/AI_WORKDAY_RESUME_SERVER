@@ -35,14 +35,10 @@ const update = async (id, data) => {
   return mapping.update(patch);
 };
 
-/**
- * Upsert: create if no record for fieldId, else update existing.
- * Returns { mapping, created: boolean }.
- */
 const upsertByFieldId = async (fieldId, data) => {
   const existing = await findByFieldId(fieldId);
   if (existing) {
-    // On remap: clear override columns so AI result is fresh; increment retryCount.
+
     const updated = await update(existing.id, {
       ...data,
       overrideValue: null,

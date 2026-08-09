@@ -9,12 +9,6 @@ const {
   ResumeCertification,
 } = require('../../database');
 
-/**
- * Resumes repository — the ONLY place that talks directly to the Resume model.
- * No business logic, no AI calls, no file I/O here.
- */
-
-// Shared include definition for all sub-tables (rawText always excluded)
 const FULL_INCLUDE = [
   { model: ResumeContactInfo, as: 'contactInfo' },
   { model: ResumeExperience, as: 'experiences', order: [['sortOrder', 'ASC']] },
@@ -40,7 +34,6 @@ const findById = async (id) => {
   });
 };
 
-/** Includes rawText — only called when AI parsing needs the original text. */
 const findByIdWithText = async (id) => {
   return Resume.findByPk(id);
 };

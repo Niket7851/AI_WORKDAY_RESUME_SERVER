@@ -39,7 +39,7 @@ const defineAutomationRun = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      // Stores non-sensitive run metadata: step counts, retry attempts, etc.
+
       metadata: {
         type: DataTypes.TEXT,
         allowNull: true,

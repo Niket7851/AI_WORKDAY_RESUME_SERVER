@@ -20,10 +20,8 @@ const VALID_FIELD_TYPES = new Set([
 ]);
 const VALID_FIELD_STATUSES = new Set(['pending', 'filled', 'skipped', 'error']);
 
-// ── Applications ────────────────────────────────────────────────────────────
-
 const createApplication = async ({ userId, resumeId, jobTitle, company, jobUrl }) => {
-  // Ensure user row exists (auto-creates anonymous placeholder if needed).
+
   await findOrCreateUser(userId);
 
   const resume = await Resume.findByPk(resumeId);
@@ -55,13 +53,10 @@ const updateApplication = async (id, data) => {
   return app;
 };
 
-// ── Steps ───────────────────────────────────────────────────────────────────
-
 const createStep = async (applicationId, { stepName, stepIndex }) => {
   const app = await applicationsRepository.findById(applicationId);
   if (!app) throw createHttpError(404, 'Application not found', 'NOT_FOUND');
 
-  // Prevent duplicate step orders
   const duplicate = await stepsRepository.findByIndex(applicationId, stepIndex);
   if (duplicate) {
     throw createHttpError(
@@ -92,7 +87,6 @@ const updateStep = async (stepId, data) => {
   const step = await stepsRepository.findById(stepId);
   if (!step) throw createHttpError(404, 'Step not found', 'NOT_FOUND');
 
-  // If changing stepIndex, check for duplicates (exclude self)
   if (data.stepIndex !== undefined && data.stepIndex !== step.stepIndex) {
     const duplicate = await stepsRepository.findByIndex(step.applicationId, data.stepIndex, stepId);
     if (duplicate) {
@@ -106,8 +100,6 @@ const updateStep = async (stepId, data) => {
 
   return stepsRepository.update(stepId, data);
 };
-
-// ── Fields ──────────────────────────────────────────────────────────────────
 
 const createField = async (stepId, { fieldLabel, fieldType = 'text', fieldSelector }) => {
   const step = await stepsRepository.findById(stepId);
@@ -167,14 +159,6 @@ const updateField = async (fieldId, data) => {
   return field;
 };
 
-/**
- * Record user confirmation before final Workday form submission.
- *
- * Rules:
- *  - Cannot confirm an already-cancelled application.
- *  - Cannot re-confirm (idempotent: returns current record if already confirmed).
- *  - `confirmedBy` must be provided (userId or display identifier).
- */
 const confirmApplication = async (id, { confirmedBy }) => {
   const app = await applicationsRepository.findById(id);
   if (!app) throw createHttpError(404, 'Application not found', 'NOT_FOUND');
@@ -183,7 +167,6 @@ const confirmApplication = async (id, { confirmedBy }) => {
     throw createHttpError(409, 'Cannot confirm a cancelled application', 'APPLICATION_CANCELLED');
   }
 
-  // Idempotent: already confirmed
   if (app.userConfirmedAt) return app;
 
   return applicationsRepository.update(id, {

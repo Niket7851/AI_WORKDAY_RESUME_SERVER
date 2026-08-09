@@ -1,8 +1,5 @@
 const { Type } = require('@google/genai');
 
-// ---------------------------------------------------------------------------
-// JSON response schema — used with responseMimeType: 'application/json'
-// ---------------------------------------------------------------------------
 const RESUME_PARSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -30,7 +27,7 @@ const RESUME_PARSE_SCHEMA = {
           location: { type: Type.STRING },
           startDate: { type: Type.STRING },
           endDate: { type: Type.STRING },
-          isCurrent: { type: Type.STRING }, // 'true' | 'false' — avoids BOOLEAN nullable issues
+          isCurrent: { type: Type.STRING }, 
           description: { type: Type.STRING },
         },
         required: ['jobTitle', 'company'],
@@ -83,11 +80,8 @@ const RESUME_PARSE_SCHEMA = {
   required: ['contactInfo', 'workExperience', 'education', 'skills', 'certifications'],
 };
 
-// ---------------------------------------------------------------------------
-// Prompt builder
-// ---------------------------------------------------------------------------
 const buildResumeParserPrompt = (rawText) => {
-  // Safety: truncate to avoid exceeding token limits (~50k chars ≈ ~12k tokens)
+
   const truncated = rawText.length > 50_000 ? rawText.slice(0, 50_000) : rawText;
 
   return `You are a professional resume parser. Extract ALL structured data from the resume text below.

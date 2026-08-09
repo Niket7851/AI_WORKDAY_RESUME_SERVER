@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('FieldMappings', {
@@ -19,7 +18,6 @@ module.exports = {
       updatedAt: { type: Sequelize.DATE, allowNull: false },
     });
 
-    // Unique constraint: one mapping per (fieldLabel, fieldType) pair
     await queryInterface.addIndex('FieldMappings', ['fieldLabel', 'fieldType'], {
       unique: true,
       name: 'field_mappings_label_type_unique',
